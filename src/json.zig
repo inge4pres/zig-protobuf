@@ -8,6 +8,9 @@ pub fn parse(
     source: anytype,
     options: std.json.ParseOptions,
 ) !Self {
+    // Increase eval branch quota for complex types (e.g., Kubernetes resources with many fields)
+    @setEvalBranchQuota(1000000);
+
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
     }
@@ -160,8 +163,10 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
         }
     }
 
+    // Build a new string with lowercase first letter instead of mutating const
     if (comptime std.ascii.isUpper(camel_cased_string[0])) {
-        camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
+        const lower_first = .{std.ascii.toLower(camel_cased_string[0])};
+        camel_cased_string = lower_first ++ camel_cased_string[1..];
     }
 
     return camel_cased_string;
